@@ -12,6 +12,32 @@
 </head>
 <body>
 
+  <!-- Start-up check: shows a message on screen if the app script never starts -->
+  <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#000;color:#8b8ba0;font:16px system-ui,sans-serif;z-index:9999;">
+    Loading Lumio…
+  </div>
+  <script>
+    function bootError(msg) {
+      var box = document.getElementById("boot");
+      if (!box || window.__lumioStarted) return;
+      box.innerHTML =
+        '<div style="padding:24px;max-width:720px;color:#ececf3;font:15px system-ui,sans-serif">' +
+        '<h3 style="color:#ff7a8a;margin:0 0 10px">Lumio could not start</h3>' +
+        '<pre style="white-space:pre-wrap;color:#c9c9d6;background:#0a0a0f;padding:12px;border-radius:10px">' +
+        String(msg).replace(/</g, "&lt;") + "</pre>" +
+        '<p style="color:#8b8ba0">Open the browser console (F12 → Console) for more detail.</p></div>';
+    }
+    window.addEventListener("error", function (e) {
+      bootError("Script error: " + (e.message || "unknown") + (e.filename ? " (" + e.filename + ":" + e.lineno + ")" : ""));
+    });
+    window.addEventListener("unhandledrejection", function (e) {
+      bootError("Error: " + ((e.reason && e.reason.message) || e.reason));
+    });
+    setTimeout(function () {
+      bootError("The app script did not start. A file is probably missing or failed to load (js/app.js or one of the files it imports).");
+    }, 8000);
+  </script>
+
   <!-- ================= AUTH: login / sign up ================= -->
   <section id="auth-view" class="auth hidden">
     <div class="auth-card">
