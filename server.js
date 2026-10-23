@@ -3,6 +3,7 @@
  *   • POST /api/chat, /api/generateImage, /api/learn — each needs a Firebase login token
  *   • keeps all API keys on the server
  */
+const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const express = require("express");
@@ -367,8 +368,104 @@ for (const [name, handler] of Object.entries(handlers)) {
   });
 }
 
-app.use(express.static(path.join(__dirname, "public")));
-app.use((_req, res) => res.status(404).send("Not found"));
+// ---------------------------------------------------------------- finding the website
+// The site files can be in public/ or flat in the repo, so search the whole project
+// for index.html and the other site files. Only safe, web-type files are ever served.
+
+const SERVE_EXT = new Set([".html", ".htm", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp", ".woff", ".woff2"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", ".github"]);
+const PROJECT_DIR = __dirname;
+
+function isServable(file) {
+  const base = path.basename(file);
+  return (
+    SERVE_EXT.has(path.extname(base).toLowerCase()) &&
+    path.resolve(file) !== path.resolve(__filename) && // never serve server.js
+    !/service|adminsdk|\.env/i.test(base) // never serve keys
+  );
+}
+
+function scan(dir, depth = 0, found = []) {
+  if (depth > 8) return found;
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return found;
+  }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (!SKIP_DIRS.has(e.name) && !e.name.startsWith(".")) scan(full, depth + 1, found);
+    } else if (e.isFile() && isServable(full)) {
+      found.push(full);
+    }
+  }
+  return found;
+}
+
+// Files inside a "public" folder are preferred when names clash.
+const allFiles = scan(PROJECT_DIR).sort((a, b) => {
+  const pa = /[\\/]public[\\/]/i.test(a) ? 0 : 1;
+  const pb = /[\\/]public[\\/]/i.test(b) ? 0 : 1;
+  return pa - pb || a.length - b.length;
+});
+const byName = new Map(); // lowercase file name -> full path
+for (const f of allFiles) {
+  const key = path.basename(f).toLowerCase();
+  if (!byName.has(key)) byName.set(key, f);
+}
+const indexFile = byName.get("index.html") || byName.get("index.htm");
+
+console.log(
+  indexFile
+    ? `Found index.html at ${path.relative(PROJECT_DIR, indexFile)}; serving ${allFiles.length} site files.`
+    : `WARNING: index.html not found anywhere in the project. Files found: ${allFiles.length}.`
+);
+
+app.get("/", (_req, res) => {
+  if (indexFile) return res.redirect(302, "/index.html");
+  sendMissing(res);
+});
+
+app.get("*", (req, res, next) => {
+  let requested;
+  try {
+    requested = decodeURIComponent(req.path);
+  } catch {
+    return res.status(400).send("Bad request");
+  }
+
+  // 1) exact path inside the project (e.g. /js/app.js or /public/css/styles.css)
+  const exact = path.resolve(PROJECT_DIR, "." + requested);
+  if (exact.startsWith(PROJECT_DIR + path.sep) && isServable(exact) && fs.existsSync(exact) && fs.statSync(exact).isFile()) {
+    return res.sendFile(exact);
+  }
+
+  // 2) same file name anywhere in the project (e.g. /css/styles.css when the file sits at the top level)
+  const found = byName.get(path.basename(requested).toLowerCase());
+  if (found && requested !== "/") return res.sendFile(found);
+
+  // 3) index.html requested under any name
+  if (/\/index\.html?$/i.test(requested) && indexFile) return res.sendFile(indexFile);
+
+  next();
+});
+
+function sendMissing(res) {
+  const names = [...byName.keys()].slice(0, 40).map((n) => `<li>${n.replace(/[<>&]/g, "")}</li>`).join("");
+  res
+    .status(404)
+    .type("html")
+    .send(
+      `<!doctype html><meta charset="utf-8"><title>Lumio: index.html missing</title>` +
+        `<body style="font-family:sans-serif;padding:24px"><h2>index.html was not found</h2>` +
+        `<p>The server searched the whole project for index.html and found none. Check that index.html is in the repo.</p>` +
+        `<p>Site files the server can see:</p><ul>${names || "<li>none</li>"}</ul></body>`
+    );
+}
+
+app.use((_req, res) => sendMissing(res));
 
 app.listen(PORT, () => {
   console.log(`Lumio is running on port ${PORT}`);
