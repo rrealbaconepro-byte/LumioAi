@@ -33,8 +33,29 @@
     window.addEventListener("unhandledrejection", function (e) {
       bootError("Error: " + ((e.reason && e.reason.message) || e.reason));
     });
+    // After 8 seconds, check every site file and report the ones that did not load.
+    var SITE_FILES = [
+      "css/styles.css",
+      "js/app.js", "js/animation.js", "js/attachments.js", "js/chat.js", "js/config.js", "js/data.js",
+      "js/firebase.js", "js/imagegen.js", "js/learner.js", "js/markdown.js", "js/schedule.js", "js/utils.js"
+    ];
     setTimeout(function () {
-      bootError("The app script did not start. A file is probably missing or failed to load (js/app.js or one of the files it imports).");
+      if (window.__lumioStarted) return;
+      var missing = [];
+      Promise.all(SITE_FILES.map(function (f) {
+        return fetch(f, { cache: "no-store" }).then(function (r) {
+          var type = r.headers.get("content-type") || "";
+          if (!r.ok || type.indexOf("text/html") !== -1) missing.push(f + " (HTTP " + r.status + ")");
+        }).catch(function () {
+          missing.push(f + " (could not load)");
+        });
+      })).then(function () {
+        bootError(
+          missing.length
+            ? "These files did not load from the server:\n" + missing.join("\n")
+            : "All site files loaded, but the app script still did not start. Open the browser console (F12) for the error."
+        );
+      });
     }, 8000);
   </script>
 
