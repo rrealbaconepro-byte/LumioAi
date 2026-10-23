@@ -1,18 +1,15 @@
 // ============================================================
-// Lumio config — paste your Firebase web-app values here.
-// Firebase console → Project settings → General → Your apps → Web app
+// Lumio config — Firebase web-app values for project lumio-949e8.
+// These are public web settings. Security comes from the Firestore rules and Auth, not from hiding them.
 // ============================================================
 export const FIREBASE_CONFIG = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:0000000000000000",
+  apiKey: "AIzaSyBkSr4hN8GQridgJRJoheeUtW_QskYKw5Q",
+  authDomain: "lumio-949e8.firebaseapp.com",
+  projectId: "lumio-949e8",
+  storageBucket: "lumio-949e8.firebasestorage.app",
+  messagingSenderId: "199773458113",
+  appId: "1:199773458113:web:15025528035a87eb1fce40",
 };
-
-// Region where the Cloud Functions are deployed (functions/index.js uses the same one).
-export const FUNCTIONS_REGION = "europe-west1";
 
 // Idle learning: after this many ms without any activity, Lumio starts learning.
 export const LEARN_IDLE_MS = 4000;
