@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lumio</title>
+  <meta name="description" content="Lumio, an AI assistant for chat, code, images and web search." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ================= AUTH: login / sign up ================= -->
+  <section id="auth-view" class="auth hidden">
+    <div class="auth-card">
+      <div class="brand"><span class="brand-star">✦</span> Lumio</div>
+
+      <form id="login-form" class="auth-form">
+        <h2>Log in</h2>
+        <input id="login-email" type="email" placeholder="Email" autocomplete="email" required />
+        <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" required />
+        <button class="btn primary" type="submit">Log in</button>
+        <button class="btn" type="button" id="google-login">Continue with Google</button>
+        <p class="auth-switch">No account? <a href="#" data-goto="signup">Sign up</a></p>
+      </form>
+
+      <form id="signup-form" class="auth-form hidden">
+        <h2>Create account</h2>
+        <input id="signup-name" type="text" placeholder="Name" autocomplete="name" required />
+        <input id="signup-email" type="email" placeholder="Email" autocomplete="email" required />
+        <input id="signup-pass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" minlength="6" required />
+        <button class="btn primary" type="submit">Sign up</button>
+        <p class="auth-switch">Already have an account? <a href="#" data-goto="login">Log in</a></p>
+      </form>
+
+      <p id="auth-error" class="error" role="alert"></p>
+    </div>
+  </section>
+
+  <!-- ================= APP ================= -->
+  <div id="app-view" class="app hidden">
+    <main class="main">
+      <header class="topbar">
+        <button id="toggle-sidebar" class="icon-btn mobile-only" aria-label="Open sidebar">☰</button>
+        <div class="model-pill"><span class="brand-star">✦</span> Lumio</div>
+        <div class="topbar-right">
+          <span id="learn-pill" class="learn-pill hidden"></span>
+          <label class="toggle"><input type="checkbox" id="web-toggle" /> Web search</label>
+          <button id="open-settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+        </div>
+      </header>
+
+      <!-- Chat -->
+      <section id="chat-view" class="view">
+        <div id="empty-state" class="empty">
+          <h1>What can I help you build or find?</h1>
+          <p class="muted">Chat, write code, search the web, attach images, or generate new ones.</p>
+          <div class="suggestions">
+            <button class="chip suggestion" data-prompt="Write a small Python script that renames all photos in a folder by date.">Write a Python script</button>
+            <button class="chip suggestion" data-prompt="What's in the news today about artificial intelligence?">Latest AI news</button>
+            <button class="chip suggestion" data-prompt="Explain how black holes form, step by step.">Explain black holes</button>
+            <button class="chip suggestion" data-prompt="Remember that I like short, direct answers.">Teach Lumio about me</button>
+          </div>
+        </div>
+        <div id="messages" class="messages"></div>
+      </section>
+
+      <!-- Image generator -->
+      <section id="image-view" class="view hidden">
+        <div class="panel-wrap">
+          <h2>Image generator</h2>
+          <form id="image-form" class="stack">
+            <textarea id="image-prompt" rows="3" placeholder="Describe the image… e.g. a neon star over a black ocean, cinematic lighting"></textarea>
+            <div class="row">
+              <select id="image-size">
+                <option value="1024x1024">Square</option>
+                <option value="1536x1024">Landscape</option>
+                <option value="1024x1536">Portrait</option>
+              </select>
+              <button id="image-go" class="btn primary" type="submit">Generate</button>
+            </div>
+          </form>
+          <div id="image-grid" class="img-grid"></div>
+        </div>
+      </section>
+
+      <!-- Schedule -->
+      <section id="schedule-view" class="view hidden">
+        <div class="panel-wrap">
+          <h2>Schedule</h2>
+          <form id="schedule-form" class="stack">
+            <input id="sch-title" type="text" placeholder="What do you need to do?" required />
+            <textarea id="sch-notes" rows="2" placeholder="Notes (optional)"></textarea>
+            <div class="row">
+              <input id="sch-when" type="datetime-local" required />
+              <select id="sch-repeat">
+                <option value="none">Once</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+              <button class="btn primary" type="submit">Add</button>
+            </div>
+          </form>
+          <div id="schedule-list" class="stack"></div>
+        </div>
+      </section>
+
+      <!-- Composer -->
+      <footer id="composer" class="composer-wrap">
+        <div class="composer-inner">
+          <div id="attachments" class="attachments hidden"></div>
+          <div class="composer">
+            <button id="attach-btn" class="icon-btn" title="Add images" aria-label="Add images">＋</button>
+            <input id="file-input" type="file" accept="image/*" multiple hidden />
+            <textarea id="input" rows="1" placeholder="Message Lumio… (Enter to send, Shift+Enter for a new line)"></textarea>
+            <button id="send-btn" class="send" title="Send" aria-label="Send message">➤</button>
+          </div>
+          <p class="fine">Lumio can make mistakes. Double-check important information.</p>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Right sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-top">
+        <button id="new-chat-btn" class="side-btn" data-view="chat">✚ New chat</button>
+        <button id="image-btn" class="side-btn" data-view="image">🎨 Image generator</button>
+        <button id="schedule-btn" class="side-btn" data-view="schedule">🗓 Schedule</button>
+      </div>
+      <div class="side-label">Chat history</div>
+      <div id="history-list" class="history"></div>
+      <div class="side-foot">
+        <span id="user-label" class="muted small"></span>
+        <button id="logout-btn" class="link-btn">Log out</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Settings -->
+  <dialog id="settings-dialog">
+    <form method="dialog" class="stack">
+      <h2>Settings</h2>
+      <label class="check"><input type="checkbox" id="set-learn" /> Let Lumio learn in the background when I'm idle</label>
+      <label class="check"><input type="checkbox" id="set-web" /> Search the web by default</label>
+      <h3>Memory</h3>
+      <div class="row">
+        <input id="mem-input" type="text" placeholder="Something Lumio should remember…" />
+        <button id="mem-add" class="btn" type="button">Add</button>
+      </div>
+      <div id="memory-list" class="stack"></div>
+      <div class="row end"><button class="btn" value="close">Close</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast-stack"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
