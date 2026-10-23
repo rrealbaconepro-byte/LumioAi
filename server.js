@@ -227,8 +227,16 @@ async function callGroq(system, messages) {
     signal: AbortSignal.timeout(110000),
   });
   if (!r.ok) {
-    console.error("Groq error", r.status, await r.text());
-    throw fail(502, "Lumio couldn't answer right now.");
+    const body = await r.text();
+    let reason = body.slice(0, 300);
+    try {
+      reason = JSON.parse(body).error.message || reason;
+    } catch {
+      // not JSON, keep the raw text
+    }
+    console.error("Groq error", r.status, body);
+    // Shows the reason in the chat so you can see it without opening the logs. Remove when fixed.
+    throw fail(502, `Lumio couldn't answer (Groq error ${r.status}): ${reason}`);
   }
   const data = await r.json();
   return (data.choices?.[0]?.message?.content || "").trim();
