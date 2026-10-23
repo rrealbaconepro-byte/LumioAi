@@ -20,10 +20,11 @@ admin.initializeApp({
 const db = admin.firestore();
 const adminAuth = admin.auth();
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
+const GROQ_KEY = process.env.GROQ_API_KEY || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 const YOUTUBE_KEY = process.env.YOUTUBE_API_KEY || "";
-const MODEL = process.env.LUMIO_MODEL || "claude-haiku-5-5";
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || ""; // only needed for image attachments
 const PORT = process.env.PORT || 10000;
 
 const HOUR = 3600 * 1000;
@@ -163,7 +164,7 @@ function buildSystem({ memories, knowledge, sources }) {
   return s;
 }
 
-// Turns stored messages into Anthropic content blocks. Merges same-role neighbours and
+// Turns stored messages into content blocks (text and images). Merges same-role neighbours and
 // drops leading assistant turns so the API always gets a valid sequence.
 function normalizeMessages(raw) {
   const out = [];
@@ -172,7 +173,7 @@ function normalizeMessages(raw) {
     const blocks = [];
     for (const img of (Array.isArray(m.images) ? m.images : []).slice(0, 8)) {
       if (ALLOWED_MIME.includes(img.mime) && typeof img.data === "string" && img.data.length < 6_000_000) {
-        blocks.push({ type: "image", source: { type: "base64", media_type: img.mime, data: img.data } });
+        blocks.push({ type: "image_url", image_url: { url: `data:${img.mime};base64,${img.data}` } });
       }
     }
     const text = clean(m.text, 8000).trim();
@@ -196,28 +197,41 @@ function lastUserText(messages) {
     .slice(0, 2000);
 }
 
-async function callClaude(system, messages) {
-  if (!ANTHROPIC_KEY) throw fail(503, "The AI key (ANTHROPIC_API_KEY) isn't set on the server yet.");
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+// Calls Groq's OpenAI-style chat API.
+async function callGroq(system, messages) {
+  if (!GROQ_KEY) throw fail(503, "The AI key (GROQ_API_KEY) isn't set on the server yet.");
+
+  const hasImages = messages.some((m) => m.content.some((b) => b.type === "image_url"));
+  if (hasImages && !GROQ_VISION_MODEL) {
+    throw fail(400, "Image messages need a vision model. Set GROQ_VISION_MODEL in Render's Environment settings.");
+  }
+
+  // A system message first, then the conversation in order.
+  const chat = [{ role: "system", content: system }];
+  for (const m of messages) {
+    const onlyText = m.content.every((b) => b.type === "text");
+    chat.push({
+      role: m.role,
+      content: onlyText ? m.content.map((b) => b.text).join("\n") : m.content,
+    });
+  }
+
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({ model: MODEL, max_tokens: 4096, system, messages }),
+    headers: { Authorization: `Bearer ${GROQ_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: hasImages ? GROQ_VISION_MODEL : GROQ_MODEL,
+      messages: chat,
+      max_tokens: 4096,
+    }),
     signal: AbortSignal.timeout(110000),
   });
   if (!r.ok) {
-    console.error("Anthropic error", r.status, await r.text());
+    console.error("Groq error", r.status, await r.text());
     throw fail(502, "Lumio couldn't answer right now.");
   }
   const data = await r.json();
-  return data.content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text)
-    .join("\n")
-    .trim();
+  return (data.choices?.[0]?.message?.content || "").trim();
 }
 
 async function handleChat(uid, input) {
@@ -235,7 +249,7 @@ async function handleChat(uid, input) {
     input.webSearch ? searchWeb(question).catch(() => []) : Promise.resolve([]),
   ]);
 
-  const text = await callClaude(buildSystem({ memories, knowledge, sources }), messages);
+  const text = await callGroq(buildSystem({ memories, knowledge, sources }), messages);
   return { text, sources: sources.map(({ title, url }) => ({ title, url })) };
 }
 
