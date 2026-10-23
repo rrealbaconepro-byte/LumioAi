@@ -26,19 +26,30 @@ import {
   onSnapshot,
   Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
-import { FIREBASE_CONFIG, FUNCTIONS_REGION } from "./config.js";
+import { FIREBASE_CONFIG } from "./config.js";
 
 export const app = initializeApp(FIREBASE_CONFIG);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-const functions = getFunctions(app, FUNCTIONS_REGION);
 
-const callables = {};
-// Calls a Cloud Function by name and returns its data.
-export function callFn(name, payload) {
-  if (!callables[name]) callables[name] = httpsCallable(functions, name, { timeout: 150000 });
-  return callables[name](payload).then((r) => r.data);
+// Calls the Lumio server (server.js on Render) and returns its JSON.
+// The user's Firebase ID token proves who is asking.
+export async function callFn(name, payload) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in first.");
+  const token = await user.getIdToken();
+
+  const res = await fetch(`/api/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `Request failed (${res.status})`);
+  return body;
 }
 
 export {
