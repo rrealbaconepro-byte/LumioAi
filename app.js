@@ -16,6 +16,10 @@ import * as schedule from "./schedule.js";
 import * as learner from "./learner.js";
 import { $, toast } from "./utils.js";
 
+// Tell the start-up check in index.html that the app is running, and remove its loading screen.
+window.__lumioStarted = true;
+document.getElementById("boot")?.remove();
+
 const VIEWS = { chat: "chat-view", image: "image-view", schedule: "schedule-view" };
 let unsubChats = null;
 let lastChats = [];
