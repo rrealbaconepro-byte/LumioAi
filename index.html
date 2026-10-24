@@ -1,208 +1,320 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lumio</title>
-  <meta name="description" content="Lumio, an AI assistant for chat, code, images and web search." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-<body>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Lumio — AI Workspace</title>
+      <meta name="description" content="Lumio, your AI chat workspace.">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
+      <style>
+        :root {
+          color-scheme: dark;
+          --bg: #101114;
+          --sidebar: #17181c;
+          --panel: #1d1f24;
+          --panel-hover: #25272d;
+          --line: #2c2e35;
+          --text: #f4f4f6;
+          --muted: #a0a3ad;
+          --accent: #b7a3ff;
+          --accent-strong: #9276ff;
+          --user: #292b32;
+          --danger: #ff8a8a;
+          --radius: 18px;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+        body { font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        button, input, textarea, select { font: inherit; }
+        button { cursor: pointer; }
+        button:disabled { cursor: not-allowed !important; opacity: .48; }
+        .hidden { display: none !important; }
+        #boot { background: var(--bg) !important; color: var(--muted) !important; }
+        .app { min-height: 100vh; display: flex; }
+        .sidebar {
+          width: 268px; flex: 0 0 268px; background: var(--sidebar);
+          border-right: 1px solid var(--line); display: flex; flex-direction: column;
+          padding: 15px 12px 12px; gap: 14px; min-height: 100vh; z-index: 20;
+        }
+        .sidebar-top { display: grid; gap: 5px; }
+        .brand-row { display: flex; align-items: center; gap: 10px; padding: 5px 9px 18px; }
+        .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 11px; background: linear-gradient(145deg,#d4c8ff,#8871ed); color: #17131f; font-size: 21px; font-weight: 700; box-shadow: 0 0 25px #9a80ff24; }
+        .brand-name { font-weight: 700; font-size: 17px; letter-spacing: -.5px; }
+        .brand-sub { font-size: 11px; color: var(--muted); margin-top: -2px; }
+        .side-btn, .history-item, .link-btn, .icon-btn, .chip, .btn {
+          border: 0; color: var(--text); background: transparent; border-radius: 11px;
+          transition: background .16s ease, border-color .16s ease, transform .16s ease;
+        }
+        .side-btn { text-align: left; display: flex; align-items: center; gap: 11px; padding: 10px 11px; min-height: 40px; color: #d9dae0; }
+        .side-btn:hover, .history-item:hover, .icon-btn:hover { background: var(--panel-hover); }
+        #new-chat-btn { background: #282a31; border: 1px solid #383a44; }
+        #new-chat-btn:hover { background: #32343d; }
+        .side-label { padding: 5px 10px 0; font-size: 11px; font-weight: 650; color: #858894; text-transform: uppercase; letter-spacing: .09em; }
+        .history { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; flex: 1; min-height: 60px; }
+        .history-item { width: 100%; text-align: left; padding: 9px 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #c8c9d0; }
+        .side-foot { border-top: 1px solid var(--line); padding: 12px 7px 3px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .small { font-size: 12px; }
+        .muted { color: var(--muted); }
+        .link-btn { padding: 7px 9px; color: #c9c1ff; }
+        .main { min-width: 0; flex: 1; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
+        .topbar { height: 64px; flex: 0 0 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-bottom: 1px solid #ffffff08; background: #101114e8; backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 10; }
+        .model-pill { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15px; }
+        .brand-star { color: var(--accent); font-size: 21px; display: inline-block; }
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+        .toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #c0c1ca; background: #1b1c21; border: 1px solid var(--line); border-radius: 99px; padding: 7px 10px; }
+        .toggle input { accent-color: var(--accent-strong); }
+        .icon-btn { width: 37px; height: 37px; display: inline-grid; place-items: center; color: #c9cad2; font-size: 18px; }
+        .mobile-only { display: none; }
+        .view { width: 100%; }
+        #chat-view { width: 100%; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .empty { width: min(760px, calc(100% - 36px)); margin: auto auto 22px; padding-top: 10vh; text-align: center; }
+        .empty::before { content: "✦"; display: grid; place-items: center; width: 55px; height: 55px; margin: 0 auto 22px; border: 1px solid #4b416e; border-radius: 18px; color: #c8baff; background: radial-gradient(circle at 35% 25%,#4a3b70,#1e1b2a 70%); font-size: 28px; box-shadow: 0 0 55px #9b82ff14; }
+        .empty h1 { font-size: clamp(26px, 3.2vw, 37px); line-height: 1.18; letter-spacing: -1.3px; font-weight: 650; margin: 0 0 11px; }
+        .empty p { margin: 0 auto 23px; font-size: 14px; }
+        .suggestions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+        .chip { border: 1px solid #30323b; background: #18191e; color: #c8c9d1; padding: 9px 12px; font-size: 12px; }
+        .chip:hover { background: #23242b; border-color: #4b4d59; }
+        .messages { width: min(800px, calc(100% - 36px)); margin: 0 auto; padding: 25px 0 32px; flex: 1; }
+        .message { margin: 0 0 24px; display: flex; flex-direction: column; gap: 7px; }
+        .message.user { align-items: flex-end; }
+        .message.user .message-content { max-width: min(78%, 620px); background: var(--user); border: 1px solid #363841; border-radius: 20px 20px 6px 20px; padding: 12px 16px; }
+        .message.assistant .message-content { max-width: 100%; padding: 5px 0; color: #e8e8ed; }
+        .message-content { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .composer-wrap { width: 100%; padding: 14px 22px 18px; margin-top: auto; background: linear-gradient(180deg, #10111400, #101114 24%); }
+        .composer-inner { width: min(800px, 100%); margin: 0 auto; }
+        .composer { display: flex; align-items: flex-end; gap: 9px; border: 1px solid #3a3c46; background: #1c1d22; border-radius: 24px; padding: 9px 10px; box-shadow: 0 12px 45px #00000020; }
+        .composer:focus-within { border-color: #71649d; box-shadow: 0 0 0 3px #a58bff0c, 0 12px 45px #00000020; }
+        #input { flex: 1; min-width: 0; resize: none; max-height: 180px; min-height: 28px; border: 0; outline: 0; background: transparent; color: var(--text); padding: 6px 2px; line-height: 1.5; }
+        #input::placeholder { color: #8e909b; }
+        #attach-btn { font-size: 23px; flex: 0 0 35px; color: #888b96; }
+        .send { width: 36px; height: 36px; flex: 0 0 36px; border: 0; border-radius: 50%; background: var(--accent); color: #17131f; font-size: 19px; font-weight: 700; display: grid; place-items: center; }
+        .send:hover { background: #c9bdff; transform: translateY(-1px); }
+        .fine { text-align: center; color: #777a85; font-size: 11px; margin: 9px 0 0; }
+        .attachments { color: var(--muted); font-size: 12px; }
+        .panel-wrap { width: min(760px, calc(100% - 36px)); margin: 35px auto; }
+        .panel-wrap h2 { font-size: 25px; letter-spacing: -.6px; margin: 0 0 18px; }
+        .stack { display: flex; flex-direction: column; gap: 12px; }
+        .stack input, .stack textarea, .stack select, #settings-dialog input[type="text"], #settings-dialog input[type="email"], #settings-dialog input[type="password"] { width: 100%; background: #1b1c21; color: var(--text); border: 1px solid #373943; border-radius: 12px; padding: 12px 13px; outline: none; }
+        .stack input:focus, .stack textarea:focus, .stack select:focus { border-color: #7968b2; }
+        .row { display: flex; align-items: center; gap: 10px; }
+        .row > * { min-width: 0; }
+        .btn { border: 1px solid #393b45; background: #25262d; padding: 10px 14px; }
+        .btn:hover { background: #30313a; }
+        .btn.primary { color: #19151f; background: var(--accent); border-color: transparent; font-weight: 650; }
+        .btn.primary:hover { background: #c9bdff; }
+        .img-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-top: 18px; }
+        .auth { min-height: 100vh; display: grid; place-items: center; padding: 22px; background: radial-gradient(ellipse at top,#29223d 0,#101114 48%); }
+        .auth-card { width: min(420px,100%); background: #191a20; border: 1px solid #343641; border-radius: 24px; padding: 30px; box-shadow: 0 24px 80px #0005; }
+        .auth-card .brand { display: flex; justify-content: center; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; margin-bottom: 26px; }
+        .auth-form { display: flex; flex-direction: column; gap: 12px; }
+        .auth-form h2 { font-size: 22px; letter-spacing: -.5px; margin: 0 0 5px; }
+        .auth-form input { background: #111216; color: var(--text); border: 1px solid #353741; border-radius: 12px; padding: 12px 13px; outline: none; }
+        .auth-form input:focus { border-color: #8a78c5; }
+        .auth-form .btn { width: 100%; }
+        .auth-switch { color: var(--muted); text-align: center; font-size: 12px; margin: 3px 0 0; }
+        a { color: #c4b6ff; }
+        .error { color: var(--danger); font-size: 12px; }
+        #settings-dialog { color: var(--text); background: #191a20; border: 1px solid #393b45; border-radius: 20px; padding: 23px; width: min(520px,calc(100% - 28px)); max-height: 85vh; overflow: auto; }
+        #settings-dialog::backdrop { background: #0009; backdrop-filter: blur(5px); }
+        #settings-dialog h2, #settings-dialog h3 { margin: 0; }
+        .check { display: flex; align-items: center; gap: 10px; color: #d0d1d8; }
+        .check input { accent-color: var(--accent-strong); }
+        .end { justify-content: flex-end; }
+        #toast-stack { position: fixed; right: 18px; bottom: 18px; z-index: 1000; }
+        .disabled-note { color: #a4a5af; font-size: 11px; margin: 0 0 0 4px; }
+        .coming-soon { border: 1px solid #343641; background: #1b1c21; border-radius: 14px; padding: 18px; color: #b9bac4; }
+        @media (max-width: 820px) {
+          .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-105%); transition: transform .22s ease; box-shadow: 20px 0 60px #0005; }
+          .sidebar.open { transform: translateX(0); }
+          .mobile-only { display: inline-grid; }
+          .topbar { padding: 0 12px; }
+          .composer-wrap { padding: 12px 12px 16px; }
+          .empty { padding-top: 7vh; }
+          .empty h1 { letter-spacing: -.8px; }
+          .toggle { font-size: 11px; padding: 6px 8px; }
+        }
+        @media (max-width: 480px) {
+          .topbar-right { gap: 3px; }
+          .toggle { max-width: 116px; }
+          .empty { width: calc(100% - 26px); }
+          .suggestions { gap: 6px; }
+          .chip { padding: 8px 10px; }
+          .row { flex-wrap: wrap; }
+          .row > * { flex: 1 1 120px; }
+          .auth-card { padding: 23px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#101114;color:#a0a3ad;font:16px system-ui,sans-serif;z-index:9999;">Loading Lumio…</div>
+      <script>
+        function bootError(msg) {
+          var box = document.getElementById("boot");
+          if (!box || window.__lumioStarted) return;
+          box.innerHTML = '<div style="padding:24px;max-width:720px;color:#ececf3;font:15px system-ui,sans-serif"><h3 style="color:#ff8a8a;margin:0 0 10px">Lumio could not start</h3><pre style="white-space:pre-wrap;color:#c9c9d6;background:#1b1c21;padding:12px;border-radius:10px">' + String(msg).replace(/</g, "&lt;") + "</pre><p style='color:#a0a3ad'>Check the browser console for details.</p></div>";
+        }
+        window.addEventListener("error", function(e) { bootError("Script error: " + (e.message || "unknown") + (e.filename ? " (" + e.filename + ":" + e.lineno + ")" : "")); });
+        window.addEventListener("unhandledrejection", function(e) { bootError("Error: " + ((e.reason && e.reason.message) || e.reason)); });
+        var SITE_FILES = ["js/app.js","js/animation.js","js/attachments.js","js/chat.js","js/config.js","js/data.js","js/firebase.js","js/imagegen.js","js/learner.js","js/markdown.js","js/schedule.js","js/utils.js"];
+        setTimeout(function() {
+          if (window.__lumioStarted) return;
+          var missing = [];
+          Promise.all(SITE_FILES.map(function(f) {
+            return fetch(f,{cache:"no-store"}).then(function(r) {
+              var type = r.headers.get("content-type") || "";
+              if (!r.ok || type.indexOf("text/html") !== -1) missing.push(f + " (HTTP " + r.status + ")");
+            }).catch(function() { missing.push(f + " (could not load)"); });
+          })).then(function() {
+            if (!window.__lumioStarted) bootError(missing.length ? "These files did not load from the server:\n" + missing.join("\n") : "The app files loaded, but startup did not finish. Check the browser console.");
+          });
+        },8000);
+      </script>
 
-  <!-- Start-up check: shows a message on screen if the app script never starts -->
-  <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#000;color:#8b8ba0;font:16px system-ui,sans-serif;z-index:9999;">
-    Loading Lumio…
-  </div>
-  <script>
-    function bootError(msg) {
-      var box = document.getElementById("boot");
-      if (!box || window.__lumioStarted) return;
-      box.innerHTML =
-        '<div style="padding:24px;max-width:720px;color:#ececf3;font:15px system-ui,sans-serif">' +
-        '<h3 style="color:#ff7a8a;margin:0 0 10px">Lumio could not start</h3>' +
-        '<pre style="white-space:pre-wrap;color:#c9c9d6;background:#0a0a0f;padding:12px;border-radius:10px">' +
-        String(msg).replace(/</g, "&lt;") + "</pre>" +
-        '<p style="color:#8b8ba0">Open the browser console (F12 → Console) for more detail.</p></div>';
-    }
-    window.addEventListener("error", function (e) {
-      bootError("Script error: " + (e.message || "unknown") + (e.filename ? " (" + e.filename + ":" + e.lineno + ")" : ""));
-    });
-    window.addEventListener("unhandledrejection", function (e) {
-      bootError("Error: " + ((e.reason && e.reason.message) || e.reason));
-    });
-    // After 8 seconds, check every site file and report the ones that did not load.
-    var SITE_FILES = [
-      "css/styles.css",
-      "js/app.js", "js/animation.js", "js/attachments.js", "js/chat.js", "js/config.js", "js/data.js",
-      "js/firebase.js", "js/imagegen.js", "js/learner.js", "js/markdown.js", "js/schedule.js", "js/utils.js"
-    ];
-    setTimeout(function () {
-      if (window.__lumioStarted) return;
-      var missing = [];
-      Promise.all(SITE_FILES.map(function (f) {
-        return fetch(f, { cache: "no-store" }).then(function (r) {
-          var type = r.headers.get("content-type") || "";
-          if (!r.ok || type.indexOf("text/html") !== -1) missing.push(f + " (HTTP " + r.status + ")");
-        }).catch(function () {
-          missing.push(f + " (could not load)");
+      <section id="auth-view" class="auth hidden">
+        <div class="auth-card">
+          <div class="brand"><span class="brand-star">✦</span> Lumio</div>
+          <form id="login-form" class="auth-form">
+            <h2>Welcome back</h2>
+            <input id="login-email" type="email" placeholder="Email address" autocomplete="email" required>
+            <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" required>
+            <button class="btn primary" type="submit">Log in</button>
+            <button class="btn" type="button" id="google-login">Continue with Google</button>
+            <p class="auth-switch">New to Lumio? <a href="#" data-goto="signup">Create an account</a></p>
+          </form>
+          <form id="signup-form" class="auth-form hidden">
+            <h2>Create your account</h2>
+            <input id="signup-name" type="text" placeholder="Your name" autocomplete="name" required>
+            <input id="signup-email" type="email" placeholder="Email address" autocomplete="email" required>
+            <input id="signup-pass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" minlength="6" required>
+            <button class="btn primary" type="submit">Create account</button>
+            <p class="auth-switch">Already have an account? <a href="#" data-goto="login">Log in</a></p>
+          </form>
+          <p id="auth-error" class="error" role="alert"></p>
+        </div>
+      </section>
+
+      <div id="app-view" class="app hidden">
+        <aside id="sidebar" class="sidebar">
+          <div class="brand-row">
+            <div class="brand-mark">✦</div>
+            <div><div class="brand-name">Lumio</div><div class="brand-sub">AI workspace</div></div>
+          </div>
+          <div class="sidebar-top">
+            <button id="new-chat-btn" class="side-btn" data-view="chat">＋ <span>New chat</span></button>
+            <button id="image-btn" class="side-btn" type="button" disabled title="Image creation is coming soon" aria-disabled="true">▧ <span>Image creation</span> <span class="disabled-note">Soon</span></button>
+            <button id="schedule-btn" class="side-btn" data-view="schedule">◷ <span>Scheduled tasks</span></button>
+          </div>
+          <div class="side-label">Recent chats</div>
+          <div id="history-list" class="history"></div>
+          <div class="side-foot">
+            <span id="user-label" class="muted small"></span>
+            <button id="logout-btn" class="link-btn">Log out</button>
+          </div>
+        </aside>
+
+        <main class="main">
+          <header class="topbar">
+            <button id="toggle-sidebar" class="icon-btn mobile-only" aria-label="Open sidebar" title="Open sidebar">☰</button>
+            <div class="model-pill"><span class="brand-star">✦</span> <span>Lumio</span></div>
+            <div class="topbar-right">
+              <span id="learn-pill" class="learn-pill hidden"></span>
+              <label class="toggle"><input type="checkbox" id="web-toggle"> Web search</label>
+              <button id="open-settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+            </div>
+          </header>
+
+          <section id="chat-view" class="view">
+            <div id="empty-state" class="empty">
+              <h1>What’s on your mind?</h1>
+              <p class="muted">Explore ideas, solve problems, or build something new with Lumio.</p>
+              <div class="suggestions">
+                <button class="chip suggestion" data-prompt="Help me brainstorm a creative project idea.">✧ Brainstorm ideas</button>
+                <button class="chip suggestion" data-prompt="Explain a difficult topic in simple steps.">▤ Learn something</button>
+                <button class="chip suggestion" data-prompt="Help me debug this code step by step.">⌘ Code with me</button>
+                <button class="chip suggestion" data-prompt="Summarize the latest news about artificial intelligence.">↗ Explore the web</button>
+              </div>
+            </div>
+            <div id="messages" class="messages"></div>
+          </section>
+
+          <section id="image-view" class="view hidden">
+            <div class="panel-wrap">
+              <h2>Image creation</h2>
+              <div class="coming-soon">Image creation is temporarily disabled and will be available in a future update.</div>
+              <form id="image-form" class="stack hidden" aria-hidden="true">
+                <textarea id="image-prompt" rows="3" placeholder="Image creation coming soon" disabled></textarea>
+                <div class="row"><select id="image-size" disabled><option value="1024x1024">Square</option></select><button id="image-go" class="btn primary" type="submit" disabled>Coming soon</button></div>
+              </form>
+              <div id="image-grid" class="img-grid"></div>
+            </div>
+          </section>
+
+          <section id="schedule-view" class="view hidden">
+            <div class="panel-wrap">
+              <h2>Scheduled tasks</h2>
+              <p class="muted">Keep track of reminders and upcoming tasks.</p>
+              <form id="schedule-form" class="stack">
+                <input id="sch-title" type="text" placeholder="What do you need to do?" required>
+                <textarea id="sch-notes" rows="2" placeholder="Notes (optional)"></textarea>
+                <div class="row">
+                  <input id="sch-when" type="datetime-local" required>
+                  <select id="sch-repeat"><option value="none">Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+                  <button class="btn primary" type="submit">Add task</button>
+                </div>
+              </form>
+              <div id="schedule-list" class="stack"></div>
+            </div>
+          </section>
+
+          <footer id="composer" class="composer-wrap">
+            <div class="composer-inner">
+              <div id="attachments" class="attachments hidden"></div>
+              <div class="composer">
+                <button id="attach-btn" class="icon-btn" type="button" disabled aria-disabled="true" title="File and image attachments are coming soon" aria-label="Attachments disabled">＋</button>
+                <input id="file-input" type="file" accept="image/*" multiple hidden disabled>
+                <textarea id="input" rows="1" placeholder="Message Lumio…" aria-label="Message Lumio (Enter to send, Shift+Enter for a new line)"></textarea>
+                <button id="send-btn" class="send" title="Send message" aria-label="Send message">↑</button>
+              </div>
+              <p class="fine">Attachments and image creation are coming soon. Lumio can make mistakes, so double-check important information.</p>
+            </div>
+          </footer>
+        </main>
+      </div>
+
+      <dialog id="settings-dialog">
+        <form method="dialog" class="stack">
+          <h2>Settings</h2>
+          <label class="check"><input type="checkbox" id="set-learn"> Let Lumio learn in the background when I’m idle</label>
+          <label class="check"><input type="checkbox" id="set-web"> Search the web by default</label>
+          <h3>Memory</h3>
+          <div class="row"><input id="mem-input" type="text" placeholder="Something Lumio should remember…"><button id="mem-add" class="btn" type="button">Add</button></div>
+          <div id="memory-list" class="stack"></div>
+          <div class="row end"><button class="btn" value="close">Close</button></div>
+        </form>
+      </dialog>
+      <div id="toast-stack"></div>
+
+      <script type="module" src="js/app.js"></script>
+      <script>
+        // UI-only guardrails: attachments and image creation stay disabled in this stage.
+        document.addEventListener("DOMContentLoaded", function() {
+          var attach = document.getElementById("attach-btn");
+          var file = document.getElementById("file-input");
+          var image = document.getElementById("image-btn");
+          var imageGo = document.getElementById("image-go");
+          if (attach) { attach.disabled = true; attach.title = "Attachments are coming soon"; }
+          if (file) file.disabled = true;
+          if (image) { image.disabled = true; image.title = "Image creation is coming soon"; }
+          if (imageGo) imageGo.disabled = true;
+          var toggle = document.getElementById("toggle-sidebar");
+          var sidebar = document.getElementById("sidebar");
+          if (toggle && sidebar) toggle.addEventListener("click", function() { sidebar.classList.toggle("open"); });
+          document.addEventListener("click", function(e) {
+            if (window.innerWidth <= 820 && sidebar && sidebar.classList.contains("open") && !sidebar.contains(e.target) && !toggle.contains(e.target)) sidebar.classList.remove("open");
+          });
         });
-      })).then(function () {
-        bootError(
-          missing.length
-            ? "These files did not load from the server:\n" + missing.join("\n")
-            : "All site files loaded, but the app script still did not start. Open the browser console (F12) for the error."
-        );
-      });
-    }, 8000);
-  </script>
-
-  <!-- ================= AUTH: login / sign up ================= -->
-  <section id="auth-view" class="auth hidden">
-    <div class="auth-card">
-      <div class="brand"><span class="brand-star">✦</span> Lumio</div>
-
-      <form id="login-form" class="auth-form">
-        <h2>Log in</h2>
-        <input id="login-email" type="email" placeholder="Email" autocomplete="email" required />
-        <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" required />
-        <button class="btn primary" type="submit">Log in</button>
-        <button class="btn" type="button" id="google-login">Continue with Google</button>
-        <p class="auth-switch">No account? <a href="#" data-goto="signup">Sign up</a></p>
-      </form>
-
-      <form id="signup-form" class="auth-form hidden">
-        <h2>Create account</h2>
-        <input id="signup-name" type="text" placeholder="Name" autocomplete="name" required />
-        <input id="signup-email" type="email" placeholder="Email" autocomplete="email" required />
-        <input id="signup-pass" type="password" placeholder="Password (6+ characters)" autocomplete="new-password" minlength="6" required />
-        <button class="btn primary" type="submit">Sign up</button>
-        <p class="auth-switch">Already have an account? <a href="#" data-goto="login">Log in</a></p>
-      </form>
-
-      <p id="auth-error" class="error" role="alert"></p>
-    </div>
-  </section>
-
-  <!-- ================= APP ================= -->
-  <div id="app-view" class="app hidden">
-    <main class="main">
-      <header class="topbar">
-        <button id="toggle-sidebar" class="icon-btn mobile-only" aria-label="Open sidebar">☰</button>
-        <div class="model-pill"><span class="brand-star">✦</span> Lumio</div>
-        <div class="topbar-right">
-          <span id="learn-pill" class="learn-pill hidden"></span>
-          <label class="toggle"><input type="checkbox" id="web-toggle" /> Web search</label>
-          <button id="open-settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
-        </div>
-      </header>
-
-      <!-- Chat -->
-      <section id="chat-view" class="view">
-        <div id="empty-state" class="empty">
-          <h1>What can I help you build or find?</h1>
-          <p class="muted">Chat, write code, search the web, attach images, or generate new ones.</p>
-          <div class="suggestions">
-            <button class="chip suggestion" data-prompt="Write a small Python script that renames all photos in a folder by date.">Write a Python script</button>
-            <button class="chip suggestion" data-prompt="What's in the news today about artificial intelligence?">Latest AI news</button>
-            <button class="chip suggestion" data-prompt="Explain how black holes form, step by step.">Explain black holes</button>
-            <button class="chip suggestion" data-prompt="Remember that I like short, direct answers.">Teach Lumio about me</button>
-          </div>
-        </div>
-        <div id="messages" class="messages"></div>
-      </section>
-
-      <!-- Image generator -->
-      <section id="image-view" class="view hidden">
-        <div class="panel-wrap">
-          <h2>Image generator</h2>
-          <form id="image-form" class="stack">
-            <textarea id="image-prompt" rows="3" placeholder="Describe the image… e.g. a neon star over a black ocean, cinematic lighting"></textarea>
-            <div class="row">
-              <select id="image-size">
-                <option value="1024x1024">Square</option>
-                <option value="1536x1024">Landscape</option>
-                <option value="1024x1536">Portrait</option>
-              </select>
-              <button id="image-go" class="btn primary" type="submit">Generate</button>
-            </div>
-          </form>
-          <div id="image-grid" class="img-grid"></div>
-        </div>
-      </section>
-
-      <!-- Schedule -->
-      <section id="schedule-view" class="view hidden">
-        <div class="panel-wrap">
-          <h2>Schedule</h2>
-          <form id="schedule-form" class="stack">
-            <input id="sch-title" type="text" placeholder="What do you need to do?" required />
-            <textarea id="sch-notes" rows="2" placeholder="Notes (optional)"></textarea>
-            <div class="row">
-              <input id="sch-when" type="datetime-local" required />
-              <select id="sch-repeat">
-                <option value="none">Once</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-              </select>
-              <button class="btn primary" type="submit">Add</button>
-            </div>
-          </form>
-          <div id="schedule-list" class="stack"></div>
-        </div>
-      </section>
-
-      <!-- Composer -->
-      <footer id="composer" class="composer-wrap">
-        <div class="composer-inner">
-          <div id="attachments" class="attachments hidden"></div>
-          <div class="composer">
-            <button id="attach-btn" class="icon-btn" title="Add images" aria-label="Add images">＋</button>
-            <input id="file-input" type="file" accept="image/*" multiple hidden />
-            <textarea id="input" rows="1" placeholder="Message Lumio… (Enter to send, Shift+Enter for a new line)"></textarea>
-            <button id="send-btn" class="send" title="Send" aria-label="Send message">➤</button>
-          </div>
-          <p class="fine">Lumio can make mistakes. Double-check important information.</p>
-        </div>
-      </footer>
-    </main>
-
-    <!-- Right sidebar -->
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-top">
-        <button id="new-chat-btn" class="side-btn" data-view="chat">✚ New chat</button>
-        <button id="image-btn" class="side-btn" data-view="image">🎨 Image generator</button>
-        <button id="schedule-btn" class="side-btn" data-view="schedule">🗓 Schedule</button>
-      </div>
-      <div class="side-label">Chat history</div>
-      <div id="history-list" class="history"></div>
-      <div class="side-foot">
-        <span id="user-label" class="muted small"></span>
-        <button id="logout-btn" class="link-btn">Log out</button>
-      </div>
-    </aside>
-  </div>
-
-  <!-- Settings -->
-  <dialog id="settings-dialog">
-    <form method="dialog" class="stack">
-      <h2>Settings</h2>
-      <label class="check"><input type="checkbox" id="set-learn" /> Let Lumio learn in the background when I'm idle</label>
-      <label class="check"><input type="checkbox" id="set-web" /> Search the web by default</label>
-      <h3>Memory</h3>
-      <div class="row">
-        <input id="mem-input" type="text" placeholder="Something Lumio should remember…" />
-        <button id="mem-add" class="btn" type="button">Add</button>
-      </div>
-      <div id="memory-list" class="stack"></div>
-      <div class="row end"><button class="btn" value="close">Close</button></div>
-    </form>
-  </dialog>
-
-  <div id="toast-stack"></div>
-
-  <script type="module" src="js/app.js"></script>
-</body>
-</html>
+      </script>
+    </body>
+    </html>
